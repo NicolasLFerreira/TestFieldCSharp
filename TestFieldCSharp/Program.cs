@@ -12,11 +12,12 @@ namespace TestFieldCSharp
 
         static void Main(string[] args)
         {
-            Matrix matrix1 = new(3, 3, new Tuple<int, int>(0, 10));
-            Matrix matrix2 = new(3, 7, new Tuple<int, int>(5, 15));
+            Matrix matrix = new(new double[,] { { 1, 2, 3 }, { 0, 1, 4 }, { 5, 6, 0 } });
 
-            Console.WriteLine(matrix2);
-            Console.WriteLine(matrix2.CheckboardSignInversion());
+            Console.WriteLine(matrix);
+            Console.WriteLine(matrix.Transpose());
+            Console.WriteLine(matrix.Transpose().MatrixOfDeterminants());
+            Console.WriteLine(matrix.Transpose().MatrixOfDeterminants().CheckboardSignInversion());
         }
     }
 }

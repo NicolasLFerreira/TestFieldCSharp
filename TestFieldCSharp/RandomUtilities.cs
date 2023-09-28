@@ -8,10 +8,10 @@ namespace TestFieldCSharp
 {
     internal static class RandomUtilities
     {
-        public static string SpaceFormatting(int number, int positions)
+        public static string SpaceFormatting(string number, int positions)
         {
             StringBuilder s = new(positions);
-            int start = positions - number.ToString().Length;
+            int start = positions - number.Length;
 
             for (int i = 0; i < start; i++)
             {
@@ -23,7 +23,7 @@ namespace TestFieldCSharp
             return s.ToString();
         }
 
-        public static int GetIntLength(int value)
+        public static int GetIntLength(double value)
         {
             return value.ToString().Length;
         }
