@@ -8,11 +8,14 @@ namespace TestFieldCSharp
 {
     internal class Matrix
     {
-        private double[][] _matrix;
+        private decimal[][] _matrix;
         public int Rows { get => _matrix.Length; }
         public int Columns { get => _matrix[0].Length; }
+        public int SmallestDimension { get => Rows > Columns ? Rows : Columns; }
+        public bool IsSquare { get => Rows == Columns; }
+        public bool HasInverse { get => DeterminantLarge() != 0; }
 
-        public double this[int row, int column]
+        public decimal this[int row, int column]
         {
             get => _matrix[row][column];
             set => _matrix[row][column] = value;
@@ -24,22 +27,22 @@ namespace TestFieldCSharp
 
         public Matrix()
         {
-            _matrix = Array.Empty<double[]>();
-            _matrix[0] = Array.Empty<double>();
+            _matrix = Array.Empty<decimal[]>();
+            _matrix[0] = Array.Empty<decimal>();
         }
 
         public Matrix(int rows, int columns)
         {
-            _matrix = new double[rows][];
+            _matrix = new decimal[rows][];
             for (int row = 0; row < rows; row++)
             {
-                _matrix[row] = new double[columns];
+                _matrix[row] = new decimal[columns];
             }
         }
 
-        public Matrix(Matrix input)
+        public Matrix(Matrix matrix)
         {
-            _matrix = input._matrix;
+            _matrix = matrix._matrix;
         }
 
         public Matrix(int rows, int columns, Tuple<int, int> range)
@@ -47,17 +50,17 @@ namespace TestFieldCSharp
             _matrix = GenerateRandomMatrix(rows, columns, range)._matrix;
         }
 
-        public Matrix(double[][] array)
+        public Matrix(decimal[][] array)
         {
             _matrix = array;
         }
 
-        public Matrix(double[,] array)
+        public Matrix(decimal[,] array)
         {
-            _matrix = new double[array.GetLength(0)][];
+            _matrix = new decimal[array.GetLength(0)][];
             for (int row = 0; row < array.GetLength(0); row++)
             {
-                _matrix[row] = new double[array.GetLength(1)];
+                _matrix[row] = new decimal[array.GetLength(1)];
                 for (int column = 0; column < array.GetLength(1); column++)
                 {
                     _matrix[row][column] = array[row, column];
@@ -67,7 +70,7 @@ namespace TestFieldCSharp
 
         // Data access and management
 
-        public double Get(int row, int column)
+        public decimal Get(int row, int column)
         {
             return this[row, column];
         }
@@ -77,21 +80,21 @@ namespace TestFieldCSharp
             this[row, column] = value;
         }
 
-        public void SetMatrix(double[][] newMatrix)
+        public void SetMatrix(decimal[][] newMatrix)
         {
             _matrix = newMatrix;
         }
 
         // Validation checks
 
-        public bool IsMultipliable(Matrix other)
+        public bool IsMultipliable(Matrix matrix)
         {
-            return Columns == other.Rows;
+            return Columns == matrix.Rows;
         }
 
-        public bool IsAddable(Matrix other)
+        public bool IsAddable(Matrix matrix)
         {
-            return Columns == other.Columns && Rows == other.Rows;
+            return Columns == matrix.Columns && Rows == matrix.Rows;
         }
 
         public bool RowBounds(int row)
@@ -106,7 +109,7 @@ namespace TestFieldCSharp
 
         // Matrix math
 
-        public Matrix ScalarMultiplication(double value)
+        public Matrix ScalarMultiplication(decimal value)
         {
             Matrix newMatrix = new(Rows, Columns);
 
@@ -126,7 +129,7 @@ namespace TestFieldCSharp
             if (!IsMultipliable(multiplier)) return new();
 
             Matrix newMatrix = new(Rows, multiplier.Columns);
-            double sum = 0;
+            decimal sum = 0;
 
             for (int row = 0; row < Rows; row++)
             {
@@ -214,15 +217,15 @@ namespace TestFieldCSharp
             return m;
         }
 
-        public double SumOfAll(Matrix matrix)
+        public decimal SumOfAll()
         {
-            double sum = 0;
+            decimal sum = 0;
 
             for (int row = 0; row < Rows; row++)
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    sum += matrix[row, column];
+                    sum += this[row, column];
                 }
             }
 
@@ -266,30 +269,60 @@ namespace TestFieldCSharp
             return newMatrix;
         }
 
-        public double Determinant2x2()
+        public decimal Determinant2x2()
         {
             return (this[0, 0] * this[1, 1]) - (this[0, 1] * this[1, 0]);
         }
 
-        public double DeterminantLarge()
+        public decimal DeterminantLarge()
         {
-            double value;
-            List<double> list = new();
+            if (SmallestDimension == 2) return Determinant2x2();
+            decimal value;
+            List<decimal> list = new();
 
-            for (int column = 0; column < Columns; column++)
+            if (SmallestDimension == 3)
             {
-                list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).Determinant2x2());
+                for (int column = 0; column < Columns; column++)
+                {
+                    list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).Determinant2x2());
+                }
             }
-
+            else
+            {
+                for (int column = 0; column < Columns; column++)
+                {
+                    list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).DeterminantLarge());
+                }
+            }
             value = list[0];
             list.RemoveAt(0);
 
-            foreach (double item in list)
+            foreach (decimal item in list)
             {
                 value += item;
             }
 
             return value;
+
+            //if (SmallestDimension < 3 || !IsSquare) return 0;
+
+            //decimal value;
+            //List<decimal> list = new();
+
+            //for (int column = 0; column < Columns; column++)
+            //{
+            //    list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).Determinant2x2());
+            //}
+
+            //value = list[0];
+            //list.RemoveAt(0);
+
+            //foreach (decimal item in list)
+            //{
+            //    value += item;
+            //}
+
+            //return value;
         }
 
         public Matrix MatrixOfDeterminants()
@@ -300,7 +333,7 @@ namespace TestFieldCSharp
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    newMatrix[row, column] = GetMatrixMinor(row, column).Determinant2x2();
+                    newMatrix[row, column] = GetMatrixMinor(row, column).DeterminantLarge();
                 }
 
             }
@@ -308,7 +341,7 @@ namespace TestFieldCSharp
             return newMatrix;
         }
 
-        public double CheckboardSign(int row, int column)
+        public static decimal CheckboardSign(int row, int column)
         {
             return (row % 2 != 0! ^ column % 2 != 0) ? -1 : 1;
         }
@@ -335,16 +368,16 @@ namespace TestFieldCSharp
         {
             if (DeterminantLarge() != 0)
             {
-                return Transpose().MatrixOfDeterminants().CheckboardSignInversion().ScalarMultiplication(1 / DeterminantLarge());
+                return Transpose().MatrixOfDeterminants().CheckboardSignInversion().ScalarMultiplication(1m / DeterminantLarge());
             }
             return new(0, 0);
         }
 
         // String conversion utility
 
-        public double FindGreatest()
+        public decimal FindGreatest()
         {
-            double greatest = 0;
+            decimal greatest = 0;
 
             for (int row = 0; row < Rows; row++)
             {
@@ -359,7 +392,7 @@ namespace TestFieldCSharp
 
         private int FindSpacing()
         {
-            double greatest = 0;
+            decimal greatest = 0;
             int hasNegative = 0;
 
             for (int row = 0; row < Rows; row++)
@@ -383,7 +416,7 @@ namespace TestFieldCSharp
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    output.Append(RandomUtilities.SpaceFormatting(this[row, column].ToString(), size) + "|");
+                    output.Append(RandomUtilities.SpaceFormatting(Math.Round(this[row, column], 10).ToString(), size) + " ");
                 }
                 output.Append('\n');
             }
@@ -407,6 +440,21 @@ namespace TestFieldCSharp
             }
 
             return newMatrix;
+        }
+
+        public static Matrix GenerateNeutral(int dimension)
+        {
+            Matrix matrix = new(dimension, dimension);
+
+            for (int row = 0; row < dimension; row++)
+            {
+                for (int column = 0; column < dimension; column++)
+                {
+                    matrix[row, column] = row == column ? 1 : 0;
+                }
+            }
+
+            return matrix;
         }
     }
 }

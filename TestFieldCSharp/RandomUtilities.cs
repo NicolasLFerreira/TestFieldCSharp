@@ -23,7 +23,7 @@ namespace TestFieldCSharp
             return s.ToString();
         }
 
-        public static int GetIntLength(double value)
+        public static int GetIntLength(decimal value)
         {
             return value.ToString().Length;
         }
