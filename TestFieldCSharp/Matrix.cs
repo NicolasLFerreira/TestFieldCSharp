@@ -214,16 +214,6 @@ namespace TestFieldCSharp
             return m;
         }
 
-        public double Determinant()
-        {
-            this[0, 1] *= -1;
-            this[1, 0] *= -1;
-
-            (this[0, 0], this[1, 1]) = (this[1, 1], this[0, 0]);
-
-            return (this[0, 0] * this[1, 1]) - (this[0, 1] * this[1, 0]);
-        }
-
         public double SumOfAll(Matrix matrix)
         {
             double sum = 0;
@@ -276,6 +266,32 @@ namespace TestFieldCSharp
             return newMatrix;
         }
 
+        public double Determinant2x2()
+        {
+            return (this[0, 0] * this[1, 1]) - (this[0, 1] * this[1, 0]);
+        }
+
+        public double DeterminantLarge()
+        {
+            double value;
+            List<double> list = new();
+
+            for (int column = 0; column < Columns; column++)
+            {
+                list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).Determinant2x2());
+            }
+
+            value = list[0];
+            list.RemoveAt(0);
+
+            foreach (double item in list)
+            {
+                value += item;
+            }
+
+            return value;
+        }
+
         public Matrix MatrixOfDeterminants()
         {
             Matrix newMatrix = new(Rows, Columns);
@@ -284,12 +300,17 @@ namespace TestFieldCSharp
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    newMatrix[row, column] = GetMatrixMinor(row, column).Determinant();
+                    newMatrix[row, column] = GetMatrixMinor(row, column).Determinant2x2();
                 }
 
             }
 
             return newMatrix;
+        }
+
+        public double CheckboardSign(int row, int column)
+        {
+            return (row % 2 != 0! ^ column % 2 != 0) ? -1 : 1;
         }
 
         public Matrix CheckboardSignInversion()
@@ -312,10 +333,11 @@ namespace TestFieldCSharp
 
         public Matrix InverseMatrix()
         {
-            Matrix newMatrix = Transpose().MatrixOfDeterminants().CheckboardSignInversion();
-
-
-            return newMatrix;
+            if (DeterminantLarge() != 0)
+            {
+                return Transpose().MatrixOfDeterminants().CheckboardSignInversion().ScalarMultiplication(1 / DeterminantLarge());
+            }
+            return new(0, 0);
         }
 
         // String conversion utility
