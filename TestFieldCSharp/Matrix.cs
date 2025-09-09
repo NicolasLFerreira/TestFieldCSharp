@@ -13,7 +13,7 @@ namespace TestFieldCSharp
         public int Columns { get => _matrix[0].Length; }
         public int SmallestDimension { get => Rows > Columns ? Rows : Columns; }
         public bool IsSquare { get => Rows == Columns; }
-        public bool HasInverse { get => DeterminantLarge() != 0; }
+        public bool HasInverse { get => Determinant() != 0; }
 
         public decimal this[int row, int column]
         {
@@ -274,9 +274,10 @@ namespace TestFieldCSharp
             return (this[0, 0] * this[1, 1]) - (this[0, 1] * this[1, 0]);
         }
 
-        public decimal DeterminantLarge()
+        public decimal Determinant()
         {
             if (SmallestDimension == 2) return Determinant2x2();
+
             decimal value;
             List<decimal> list = new();
 
@@ -291,7 +292,7 @@ namespace TestFieldCSharp
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).DeterminantLarge());
+                    list.Add(this[0, column] * CheckboardSign(0, column) * GetMatrixMinor(0, column).Determinant());
                 }
             }
             value = list[0];
@@ -333,9 +334,8 @@ namespace TestFieldCSharp
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    newMatrix[row, column] = GetMatrixMinor(row, column).DeterminantLarge();
+                    newMatrix[row, column] = GetMatrixMinor(row, column).Determinant();
                 }
-
             }
 
             return newMatrix;
@@ -364,13 +364,22 @@ namespace TestFieldCSharp
             return newMatrix;
         }
 
+        public Matrix Invert2x2()
+        {
+            return new Matrix(new decimal[,] { { this[1, 1], this[0, 1] * -1 }, { this[1, 0] * -1, this[0, 0] } })
+                .ScalarMultiplication(Determinant2x2());
+        }
+
         public Matrix InverseMatrix()
         {
-            if (DeterminantLarge() != 0)
-            {
-                return Transpose().MatrixOfDeterminants().CheckboardSignInversion().ScalarMultiplication(1m / DeterminantLarge());
-            }
-            return new(0, 0);
+            if (!IsSquare || Determinant() == 0) return new(0, 0);
+            if (SmallestDimension == 2)
+                return Invert2x2();
+            else
+                return Transpose()
+                    .MatrixOfDeterminants()
+                    .CheckboardSignInversion()
+                    .ScalarMultiplication(1m / Determinant());
         }
 
         // String conversion utility
@@ -411,12 +420,13 @@ namespace TestFieldCSharp
         {
             StringBuilder output = new();
             int size = FindSpacing();
+            int precision = 10;
 
             for (int row = 0; row < Rows; row++)
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    output.Append(RandomUtilities.SpaceFormatting(Math.Round(this[row, column], 10).ToString(), size) + " ");
+                    output.Append(RandomUtilities.SpaceFormatting(this[row, column].ToString(), size) + " ");
                 }
                 output.Append('\n');
             }
@@ -425,6 +435,47 @@ namespace TestFieldCSharp
         }
 
         // Other
+
+        public static Matrix ParseMatrix()
+        {
+            Matrix matrix;
+
+            int sizeX, sizeY;
+            int x = 0, y = 0;
+
+            Console.WriteLine("Enter x and y in order:");
+            sizeX = Convert.ToInt32(Console.ReadLine());
+            sizeY = Convert.ToInt32(Console.ReadLine());
+
+            matrix = new(sizeX, sizeY);
+
+            Console.WriteLine("\n\nEnter the matrix:");
+            string input = Console.ReadLine() ?? "1 0, 0 1";
+            StringBuilder current = new();
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                if ((input[i] >= '0' && input[i] <= '9') || input[i] == '-') current.Append(input[i]);
+                else
+                {
+                    matrix[x, y] = Convert.ToDecimal(current.ToString());
+                    current = current.Clear();
+                    if (input[i] == ' ')
+                    {
+                        y++;
+                    }
+                    if (input[i] == ',')
+                    {
+                        y = 0;
+                        x++;
+                    }
+                }
+            }
+
+            matrix[x, y] = Convert.ToDecimal(current.ToString());
+
+            return matrix;
+        }
 
         public static Matrix GenerateRandomMatrix(int rows, int columns, Tuple<int, int> range)
         {
@@ -455,6 +506,19 @@ namespace TestFieldCSharp
             }
 
             return matrix;
+        }
+
+        public static void MatrixTesting(Matrix matrix)
+        {
+            Console.WriteLine("--------------------------------------------------------");
+            Console.WriteLine(">Matrix<\n");
+            Console.WriteLine($"::Dimensions -> {matrix.Rows} x {matrix.Columns}");
+            Console.WriteLine(matrix);
+            Console.WriteLine($"::Determinant -> {matrix.Determinant()}");
+            Console.WriteLine(">Inversed Matrix<");
+            Console.WriteLine(matrix.InverseMatrix());
+            Console.WriteLine(">Validation<");
+            Console.WriteLine(matrix.Multiplication(matrix.InverseMatrix()));
         }
     }
 }
